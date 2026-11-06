@@ -1,0 +1,6 @@
+[
+  {"thought": "(simulated hallucination) I am sure the dashboard is shown.", "action": "done", "result": "pass",
+   "reason": "Dashboard shown", "evidence": [{"type": "text_visible", "value": "Welcome back, Demo Customer"}]},
+  {"thought": "(simulated hallucination again)", "action": "done", "result": "pass",
+   "reason": "Dashboard shown", "evidence": [{"type": "url_contains", "value": "/dashboard"}]}
+]

@@ -1,0 +1,6 @@
+# One test case per line. "@url" sets the start page for the lines below it.
+@url https://phptravels.net
+Log in as a customer and verify the dashboard is shown
+Log in with the customer email and a wrong password and verify that an error message is shown
+Open the hotels page, search for hotels in Dubai and verify that a list of hotels is shown
+Verify that the home page has a flight search form with from and to fields

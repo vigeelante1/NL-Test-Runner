@@ -1,0 +1,29 @@
+[
+ {
+  "thought": "(simulated mistake) click an id that does not exist",
+  "action": "click",
+  "id": 99
+ },
+ {
+  "thought": "(simulated mistake again)",
+  "action": "click",
+  "id": 99
+ },
+ {
+  "thought": "Recover: dismiss the notice.",
+  "action": "click",
+  "id": 6
+ },
+ {
+  "thought": "Page usable now.",
+  "action": "done",
+  "result": "pass",
+  "reason": "Recovered from a bad step.",
+  "evidence": [
+   {
+    "type": "text_visible",
+    "value": "Sign in to your account"
+   }
+  ]
+ }
+]

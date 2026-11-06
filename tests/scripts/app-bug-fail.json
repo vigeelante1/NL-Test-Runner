@@ -1,0 +1,8 @@
+[
+  {"thought": "Dismiss the notice.", "action": "click", "id": 6},
+  {"thought": "Fill email.", "action": "fill", "id": 1, "text": "{{CUSTOMER_EMAIL}}"},
+  {"thought": "Fill a password.", "action": "fill", "id": 2, "text": "not-the-real-one"},
+  {"thought": "Submit.", "action": "click", "id": 4},
+  {"thought": "Still on the login page with an error: the dashboard did not appear.", "action": "done", "result": "fail",
+   "reason": "After signing in, 'Invalid email or password' was shown instead of the dashboard."}
+]

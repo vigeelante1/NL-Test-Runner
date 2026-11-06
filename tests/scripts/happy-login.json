@@ -1,0 +1,9 @@
+[
+  {"thought": "A notice covers the page; dismiss it first.", "action": "click", "id": 6},
+  {"thought": "Fill the customer email.", "action": "fill", "id": 1, "text": "{{CUSTOMER_EMAIL}}"},
+  {"thought": "Fill the customer password.", "action": "fill", "id": 2, "text": "{{CUSTOMER_PASSWORD}}"},
+  {"thought": "Submit the login form.", "action": "click", "id": 4},
+  {"thought": "Dashboard heading and welcome text are visible.", "action": "done", "result": "pass",
+   "reason": "Logged in and the dashboard is shown.",
+   "evidence": [{"type": "url_contains", "value": "dashboard"}, {"type": "text_visible", "value": "Welcome back"}]}
+]

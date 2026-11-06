@@ -1,0 +1,6 @@
+[
+  {"thought": "Dismiss the notice.", "action": "click", "id": 6},
+  {"thought": "Tick Remember me.", "action": "check", "id": 3},
+  {"thought": "Prove the box is ticked by its real state.", "action": "done", "result": "pass",
+   "reason": "Remember me is ticked.", "evidence": [{"type": "element_checked", "id": 3}]}
+]

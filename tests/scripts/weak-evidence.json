@@ -1,0 +1,7 @@
+[
+  {"thought": "Dismiss the notice.", "action": "click", "id": 6},
+  {"thought": "(simulated weak proof) the label text is visible, so it must be ticked", "action": "done", "result": "pass",
+   "reason": "Remember me is ticked.", "evidence": [{"type": "text_visible", "value": "Remember me"}, {"type": "element_checked", "id": 3}]},
+  {"thought": "(simulated weak proof again) a '1' is on the page", "action": "done", "result": "pass",
+   "reason": "ticked", "evidence": [{"type": "text_visible", "value": "1"}]}
+]

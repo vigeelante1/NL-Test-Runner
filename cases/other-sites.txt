@@ -1,0 +1,10 @@
+# A different website, to show nothing is specific to phptravels.
+# saucedemo.com lists its public test usernames and password on its own login page.
+@url https://www.saucedemo.com
+Log in as the standard user and verify the products page is shown
+Log in as the locked out user and verify an error says the user is locked out
+Log in as the standard user, add the backpack to the cart, open the cart and verify it contains 1 item
+
+# No start URL: the test case itself names the site.
+@url
+Go to https://the-internet.herokuapp.com/checkboxes, tick checkbox 1 and verify both checkboxes are ticked
