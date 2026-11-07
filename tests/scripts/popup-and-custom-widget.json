@@ -1,0 +1,11 @@
+[
+  {"thought": "(simulated mistake) click the Stays tab while the pop-up is still open", "action": "click", "id": 2},
+  {"thought": "The click was blocked by the pop-up; close it.", "action": "click", "id": 4},
+  {"thought": "Switch to hotel search.", "action": "click", "id": 2},
+  {"thought": "Open the custom destination picker (a div, not an input).", "action": "click", "id": 3},
+  {"thought": "Type the city.", "action": "fill", "id": 4, "text": "Dub"},
+  {"thought": "Pick Dubai from the suggestions.", "action": "click", "id": 5},
+  {"thought": "Run the search.", "action": "click", "id": 4},
+  {"thought": "Results for Dubai are listed.", "action": "done", "result": "pass", "reason": "Hotels in Dubai are listed.",
+   "evidence": [{"type": "text_visible", "value": "3 hotels found in Dubai"}, {"type": "text_visible", "value": "Palm Resort"}]}
+]

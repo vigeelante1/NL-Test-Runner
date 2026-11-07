@@ -1,0 +1,50 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Demo Travel - Search</title>
+<style>
+body{font-family:sans-serif;margin:40px}
+.tabs button{margin-right:8px}
+#dest{display:inline-block;border:1px solid #999;padding:8px 14px;cursor:pointer;min-width:220px}
+#dest small{display:block;color:#666}
+#picker{display:none;border:1px solid #ccc;padding:8px;margin-top:4px;width:260px}
+.opt{padding:4px;cursor:pointer}
+#notice{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center}
+#notice div{background:#fff;padding:24px;border-radius:8px;max-width:420px}
+</style></head>
+<body>
+<h1>Travel The Way You Love!</h1>
+<div class="tabs" role="tablist">
+  <button role="tab" id="t-flights" aria-selected="true">Flights</button>
+  <button role="tab" id="t-stays">Stays</button>
+</div>
+<section id="flights-form"><p>Departure From <input placeholder="Departure City"></p></section>
+<section id="stays-form" hidden>
+  <!-- Like phptravels: the destination "box" is a div with a JS click handler, not an <input> -->
+  <div id="dest"><small>Destination or Hotel Name</small><span id="dest-value">Search By City</span></div>
+  <div id="picker"><input id="q" placeholder="Type a city"><div id="opts"></div></div>
+  <p><button id="go">Search</button></p>
+</section>
+<div id="results"></div>
+
+<div id="notice"><div><h3>Important Notice: Demo Environment</h3><p>Prices are simulated.</p>
+<button onclick="document.getElementById('notice').remove()">I Understand &amp; Continue</button></div></div>
+
+<script>
+const $ = s => document.querySelector(s);
+$('#t-stays').addEventListener('click', () => { $('#stays-form').hidden = false; $('#flights-form').hidden = true; });
+$('#t-flights').addEventListener('click', () => { $('#stays-form').hidden = true; $('#flights-form').hidden = false; });
+$('#dest').addEventListener('click', () => { $('#picker').style.display = 'block'; $('#q').focus(); });
+$('#q').addEventListener('input', e => {
+  const cities = ['Dubai', 'Dublin', 'Delhi', 'Paris'].filter(c => c.toLowerCase().startsWith(e.target.value.toLowerCase()) && e.target.value);
+  $('#opts').innerHTML = cities.map(c => `<div class="opt" data-city="${c}">${c}, City</div>`).join('');
+});
+$('#opts').addEventListener('click', e => {
+  const o = e.target.closest('.opt'); if (!o) return;
+  $('#dest-value').textContent = o.dataset.city; $('#picker').style.display = 'none';
+});
+$('#go').addEventListener('click', () => {
+  const city = $('#dest-value').textContent;
+  $('#results').innerHTML = city === 'Search By City' ? '<p>Please choose a destination</p>'
+    : `<h2>3 hotels found in ${city}</h2><ul><li>Palm Resort</li><li>Marina Hotel</li><li>Creek Inn</li></ul>`;
+});
+</script>
+</body></html>

@@ -57,18 +57,54 @@ phptravels.com/demo. The tool doesn't fill that kind of form with personal data.
 `testdata.env`. The model only sees placeholder names (`{{CUSTOMER_PASSWORD}}`); real values are swapped
 in at the moment of typing and masked in logs and reports, so they never reach the AI provider.
 
+## What happened on phptravels.net
+
+- **Customer login could not be tested.** phptravels.net does not publish demo logins. A newly
+  registered account gets "unable to send verification email, contact admin" and is then refused with
+  "Please verify your email address". With an unactivated account the tool reported **FAIL ("Invalid
+  Credentials")**, which is the honest result. It did not pretend to log in. The login test is kept
+  separately (`cases/phptravels-login.txt`) for when an activated account is available; the same flow
+  passes on saucedemo.com.
+- **Navigation lesson.** In an early run the model guessed the URL `/hotels` (404) instead of clicking
+  the site's "Stays" menu. On the home page "Stays" is a *tab*: it switches the search box without
+  changing the URL, so the model thought the click had failed and kept guessing (20 steps). Telling it
+  not to guess wasn't enough for a small model, so the tool now **enforces** it: `goto` is only allowed
+  for URLs in the test case or links that exist on pages seen so far, and URLs that returned 404 are
+  blocked for the rest of the test.
+
+- **Things the snapshot couldn't see.** Two more real failures came from the tool, not the model:
+  1. A "Demo Environment" pop-up covers phptravels.net on load. The tool used to *force-click* through
+     anything in the way, so clicks on Login/Currency/Signup silently hit the pop-up and the model
+     concluded the site was "unresponsive". Now a blocked click is reported with the element in the
+     way, the snapshot announces pop-ups at the top, and elements behind it are marked `covered`.
+  2. The hotel "Destination" box is a `<div>` made clickable by JavaScript (Alpine.js), not an
+     `<input>`, so it wasn't listed and the model kept clicking the tab. The snapshot now also lists
+     custom clickable elements: the outermost element with a pointer (hand) cursor, or a framework
+     click attribute (`@click`, `v-on:click`, `ng-click`, tabindex).
+
+- **FAIL vs ERROR.** Once, stuck on a required "Nationality" picker, the model reported FAIL ("search
+  not triggering"), blaming the site for its own difficulty. The instructions now separate the two:
+  FAIL only when the application clearly misbehaves; a form asking for more input is not a failure;
+  being unable to operate the page is ERROR with the reason.
+
 ## Choices
 
 - **Python + Playwright**: auto-waiting makes actions far less flaky than raw Selenium for an agent
   that can't predict load times.
 - **Text snapshot instead of screenshots**: cheaper, faster, and the model can name exact elements.
   `--vision` adds a screenshot for pages that rely on icons.
-- **Gemini Flash** via REST: free tier, fast, JSON output mode. The `LLM` interface is one method,
+- **Gemini Flash-Lite** via REST: free tier with ~500 requests/day (Flash allows ~20), fast, JSON
+  output mode. It passed the same saucedemo and checkbox tests as the bigger Flash models. The `LLM` interface is one method,
   so another provider is a small class.
 - **Temperature 0** and strict JSON to make runs as repeatable as possible.
 
 ## Limitations (honest list)
 
+- **Complex custom widgets with a small model.** On phptravels.net the hotel search uses JavaScript
+  pickers (destination, nationality) that render their inputs in a separate floating panel. Flash-Lite
+  found the destination box, typed "Dubai" and picked the suggestion, but did not complete the whole
+  form reliably, so this test ends in **ERROR** (never a false PASS). A larger model or `--vision`
+  gets further; the tool stops early when the model is going in circles.
 - **Counts are only as precise as the evidence.** "The cart contains 1 item" passed with evidence
   "/cart.html" + "Sauce Labs Backpack", which proves the backpack is in the cart, not that it is the
   *only* item. The model is told to quote text that states a count, but a page may not show one.

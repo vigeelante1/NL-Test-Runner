@@ -40,7 +40,13 @@ Then create two local files (both are git-ignored):
 1. **`.env`**: copy `.env.example` and paste your Gemini API key
    (free at <https://aistudio.google.com/apikey>).
 2. **`testdata.env`** (only needed for tests that log in): copy `testdata.env.example` and fill in
-   logins. For phptravels.net, the demo logins appear after filling the form at <https://phptravels.com/demo>.
+   logins.
+
+   **phptravels.net customer login:** new sign-ups on the public demo can't be activated. The site
+   can't send the verification email and then refuses to log in until the email is verified. So the
+   customer-login test lives in `cases/phptravels-login.txt` and needs an account activated by
+   PHPTravels. The same login flow (fill credentials, submit, verify the logged-in page) is
+   demonstrated on saucedemo.com in `cases/other-sites.txt`.
 
 ## Run
 
@@ -57,6 +63,7 @@ python -m nlqa "Go to https://www.saucedemo.com, log in as the standard user and
 # a file of test cases (one per line, '@url' sets the start page)
 python -m nlqa --file cases/phptravels.txt
 python -m nlqa --file cases/other-sites.txt
+python -m nlqa --file cases/phptravels-login.txt   # needs an activated account, see below
 ```
 
 | Option | Meaning |
@@ -66,9 +73,13 @@ python -m nlqa --file cases/other-sites.txt
 | `--headed` | Show the browser window |
 | `--vision` | Also send a screenshot to the model each step (helps with icon-only buttons; slower) |
 | `--max-steps` | Give up after N steps (default 25) |
-| `--model` | Gemini model (default `gemini-3.8-flash`, or `GEMINI_MODEL` in `.env`) |
+| `--model` | Gemini model (default `gemini-3.5-flash-lite`, or `GEMINI_MODEL` in `.env`) |
 | `--data` | Test-data file (default `testdata.env`) |
 | `--list-models` | Show the Gemini models your key can use |
+
+**Free-tier quota:** each step is one AI call, and a test takes ~3–8 steps. Gemini Flash-Lite models
+allow about 500 requests/day on the free tier, Flash models only about 20, so Flash-Lite is the default.
+Check your limits at <https://aistudio.google.com/rate-limit>.
 
 If the chosen model is overloaded (HTTP 503), out of free quota or unavailable, the tool switches
 automatically to another model your key can use and keeps using it for the rest of the run.
@@ -104,6 +115,10 @@ Runs a small local demo site with scripted "AI" decisions and checks that the to
 | Model uses a non-existent element, then recovers | PASS |
 | Checkbox proven ticked by its real state | PASS |
 | **Model "proves" a tick with label text or the number '1'** | **FAIL (weak evidence rejected)** |
+| Model guesses a URL no link points to | guess refused, test continues |
+| Model repeats the same failing action | stopped early with ERROR ("Stuck") |
+| Pop-up covers the page; model clicks behind it | click reported as blocked (not silently swallowed) |
+| Search box is a custom `<div>` widget, not an `<input>` | found and usable (hotel search flow) |
 
 It also checks that the password never appears in any step log.
 

@@ -63,7 +63,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--headed", action="store_true", help="show the browser window")
     ap.add_argument("--vision", action="store_true", help="also send a screenshot to the model each step")
     ap.add_argument("--max-steps", type=int, default=int(os.getenv("NLQA_MAX_STEPS", "25")))
-    ap.add_argument("--model", default=os.getenv("GEMINI_MODEL", "gemini-3.8-flash"))
+    ap.add_argument("--model", default=os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite"))
     ap.add_argument("--script", help="(testing the tool itself) replay actions from a JSON file instead of calling an AI")
     ap.add_argument("--reports", default="reports", help="where reports are written")
     ap.add_argument("--list-models", action="store_true", help="show the Gemini models your API key can use, then exit")

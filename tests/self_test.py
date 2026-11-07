@@ -34,6 +34,9 @@ CASES = [
     ("bad-element.json", "Dismiss the notice and verify the login form is usable", "PASS"),
     ("checkbox-proof.json", "Tick 'Remember me' and verify it is ticked", "PASS"),
     ("weak-evidence.json", "Verify 'Remember me' is ticked (it is not)", "FAIL"),
+    ("guessed-url.json", "Verify the login form is usable", "PASS"),
+    ("stuck-loop.json", "Do something impossible", "ERROR"),
+    ("popup-and-custom-widget.json", "Search hotels in Dubai and verify a list of hotels is shown", "PASS", "search.html"),
 ]
 
 
@@ -52,12 +55,18 @@ def main() -> int:
     server, url = serve()
     failures = 0
     with tempfile.TemporaryDirectory() as tmp:
-        for script, case, expected in CASES:
+        for script, case, expected, *page in CASES:
             agent = Agent(ScriptedLLM(str(SCRIPTS / script)), DATA, Path(tmp) / script, verbose=False)
-            res = agent.run(case, url)
+            res = agent.run(case, url.replace("login.html", page[0]) if page else url)
             dump = json.dumps([s.__dict__ for s in res.steps]) + res.reason
             leaked = DATA["CUSTOMER_PASSWORD"] in dump
             ok = res.status == expected and not leaked
+            if script == "guessed-url.json":  # the guessed URL must have been refused, not opened
+                ok = ok and res.steps and res.steps[0].result.startswith("refused")
+            if script == "stuck-loop.json":  # must stop early, not burn all 25 steps
+                ok = ok and len(res.steps) <= 5 and res.reason.startswith("Stuck")
+            if script == "popup-and-custom-widget.json":  # the click behind the pop-up must be reported as blocked
+                ok = ok and res.steps and "blocked" in res.steps[0].result
             failures += not ok
             print(f"{'OK   ' if ok else 'WRONG'} {script:<22} expected {expected:<5} got {res.status:<5} "
                   f"{'(SECRET LEAKED) ' if leaked else ''}- {res.reason}")

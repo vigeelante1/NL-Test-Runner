@@ -24,6 +24,8 @@ class Snapshot:
     headings: list[str]
     text: str
     frames: dict[int, int] = field(default_factory=dict)  # element id -> frame index
+    links: list[str] = field(default_factory=list)          # every link URL on the page
+    overlay: str = ""                                       # text of a pop-up covering the page, if any
     tabs: int = 1
 
     def render(self, max_text: int = 2500) -> str:
@@ -32,6 +34,8 @@ class Snapshot:
             f"Title: {self.title}",
             f"Open tabs: {self.tabs} (you are on the newest one)" if self.tabs > 1 else "",
             "Headings: " + " | ".join(self.headings) if self.headings else "",
+            (f"A POP-UP / OVERLAY COVERS THE PAGE: \"{self.overlay}\". Elements marked 'covered' are behind "
+             "it and cannot be clicked until it is closed.") if self.overlay else "",
             "",
             "Interactive elements (use the number in brackets as `id`):",
             *(self.elements or ["(none)"]),
@@ -70,7 +74,7 @@ class Browser:
     def snapshot(self) -> Snapshot:
         self._settle()
         page = self.page
-        elements, headings, texts, frames = [], [], [], {}
+        elements, headings, texts, frames, links, overlay = [], [], [], {}, [], ""
         next_id = 1
         for index, frame in enumerate(page.frames):
             try:
@@ -82,16 +86,26 @@ class Browser:
             prefix = "" if index == 0 else f"(in iframe {index}) "
             elements += [prefix + line for line in data["elements"]]
             headings += data["headings"]
+            links += data.get("links", [])
+            overlay = overlay or (data.get("overlay") or "")
             if data["text"]:
                 texts.append(data["text"])
             next_id = data["nextId"]
         snap = Snapshot(url=page.url, title=self._safe_title(), elements=elements, headings=headings,
-                        text="\n".join(texts), frames=frames, tabs=len(self._context.pages))
+                        text="\n".join(texts), frames=frames, tabs=len(self._context.pages), links=links, overlay=overlay)
         self._last = snap
         return snap
 
     def looks_like_bot_check(self, snap: Snapshot) -> bool:
         return bool(BOT_CHECK.search(snap.title + " " + snap.text[:3000]))
+
+    def looks_like_not_found(self) -> bool:
+        try:
+            head = (self.page.title() + " " + self.page.evaluate(
+                "() => document.body ? document.body.innerText.slice(0, 600) : ''")).lower()
+        except PlaywrightError:
+            return False
+        return ("404" in head and "not found" in head) or "page not found" in head
 
     def screenshot(self, path: Path) -> bytes | None:
         try:
@@ -133,11 +147,14 @@ class Browser:
             loc = self._locate(action.get("id"))
             if kind == "click":
                 try:
-                    loc.click(timeout=8000)
+                    loc.click(timeout=6000)
                 except PlaywrightError as e:
-                    if "intercept" not in str(e) and "not visible" not in str(e):
-                        raise
-                    loc.click(timeout=5000, force=True)  # something overlaps it; click anyway
+                    blocker = re.search(r"^\s*-\s*(<[a-zA-Z][^>]{0,160}>).*intercepts pointer events", str(e), re.M)
+                    if blocker or "intercepts pointer events" in str(e):
+                        what = blocker.group(1) if blocker else "an overlay"
+                        raise ActionError(f"click blocked: another element is on top of it {what}. "
+                                          "Close the pop-up/overlay first.") from None
+                    raise
                 return "clicked"
             if kind == "fill":
                 loc.fill(action.get("text", ""), timeout=8000)

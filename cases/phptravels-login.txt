@@ -1,0 +1,7 @@
+# Customer login on phptravels.net. Needs an ACTIVE customer account in testdata.env
+# (CUSTOMER_EMAIL / CUSTOMER_PASSWORD).
+# Note (Nov 2026): new sign-ups on the public demo cannot activate themselves. The site says
+# "unable to send verification email, contact admin" and then refuses login with
+# "Please verify your email address". Run this file when you have an activated account.
+@url https://phptravels.net
+Log in as a customer and verify the dashboard is shown

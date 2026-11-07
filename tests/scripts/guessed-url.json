@@ -1,0 +1,6 @@
+[
+  {"thought": "(simulated) guess a URL that no link points to", "action": "goto", "url": "/hotels.html"},
+  {"thought": "Refused; use the page instead. Dismiss the notice.", "action": "click", "id": 6},
+  {"thought": "Login form is usable.", "action": "done", "result": "pass", "reason": "Recovered after a refused guess.",
+   "evidence": [{"type": "text_visible", "value": "Sign in to your account"}]}
+]

@@ -42,7 +42,7 @@ class GeminiLLM:
 
     URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
-    def __init__(self, api_key: str, model: str = "gemini-3.8-flash", min_interval: float = 0.0):
+    def __init__(self, api_key: str, model: str = "gemini-3.5-flash-lite", min_interval: float = 0.0):
         if not api_key:
             raise LLMError("GEMINI_API_KEY is not set. Put it in a .env file (see .env.example).")
         self.api_key = api_key
@@ -138,7 +138,8 @@ class GeminiLLM:
 
     # ---------------------------------------------------------------- model discovery
     def available_models(self) -> list[str]:
-        """Models this key can call for text generation, best candidates first (flash, then lite, then pro)."""
+        """Models this key can call for text generation. Flash-Lite first: on the free tier it allows
+        ~500 requests/day versus ~20 for Flash, and it is fast enough for one-action-per-step work."""
         if self._available is not None:
             return self._available
         names: list[str] = []
@@ -164,7 +165,7 @@ class GeminiLLM:
         names = [n for n in dict.fromkeys(names) if not any(s in n for s in skip)]
 
         def rank(n: str):
-            tier = 0 if "flash" in n and "lite" not in n else 1 if "flash-lite" in n else 2
+            tier = 0 if "flash-lite" in n else 1 if "flash" in n else 2
             preview = 1 if ("preview" in n or "exp" in n) else 0
             version = [int(x) for x in re.findall(r"\d+", n)[:2]]
             return (tier, preview, [-v for v in version])

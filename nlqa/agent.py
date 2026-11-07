@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import re
 import time
+from urllib.parse import urljoin, urlsplit
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -84,6 +85,22 @@ class Agent:
             return kind + (f" {a.get('text') or a.get('ms') or ''}" if kind != "back" else "")
         return f"{kind} [{a.get('id')}]"
 
+    @staticmethod
+    def norm_url(url: str) -> str:
+        s = urlsplit(url.strip())
+        return f"{s.scheme.lower()}://{s.netloc.lower()}{s.path.rstrip('/') or '/'}".lower()
+
+    def goto_problem(self, url: str, known: set[str], dead: set[str]) -> str | None:
+        """Why a goto is not allowed, or None. Guessing URLs leads models into 404 loops."""
+        n = self.norm_url(url)
+        if n in dead:
+            return f"{url} already returned 'Page not found'. Use the page's menus, tabs or search form instead."
+        if n not in known:
+            return (f"{url} was not given in the test case and is not a link on the pages seen so far, so it is "
+                    "a guess and is not allowed. Use the visible links, menus, tabs or search forms. Note: "
+                    "clicking a tab can change the page content without changing the URL.")
+        return None
+
     # ------------------------------------------------------------------ evidence
     def check_evidence(self, browser: Browser, evidence: list[dict]) -> tuple[bool, list[str]]:
         """Re-reads the real page and confirms every piece of evidence the model gave for a PASS."""
@@ -164,12 +181,18 @@ class Agent:
         rejected_passes = 0
         repeated_failures: dict[str, int] = {}
         calls_before = getattr(self.llm, "calls", 0)
+        # URLs the model may open directly: the start URL, URLs written in the test case, real links seen.
+        known_urls = {self.norm_url(u) for u in re.findall(r"https?://[^\s,;'\"]+", test_case)}
+        if start_url:
+            known_urls.add(self.norm_url(start_url))
+        dead_urls: set[str] = set()
 
         try:
             if start_url:
                 browser.act({"action": "goto", "url": start_url})
             for step in range(1, self.max_steps + 1):
                 snap = browser.snapshot()
+                known_urls.update(self.norm_url(u) for u in snap.links)
                 if browser.looks_like_bot_check(snap):
                     res.status, res.reason = "ERROR", "The site is showing a bot check / captcha; automation cannot continue."
                     break
@@ -225,6 +248,15 @@ class Agent:
 
                 summary = self.describe(action)
                 key = summary
+                if kind == "goto":
+                    target = urljoin(browser.page.url, self.substitute(str(action.get("url", ""))))
+                    problem = self.goto_problem(target, known_urls, dead_urls)
+                    if problem:
+                        note = "Navigation refused: " + problem
+                        self.log(f"     {summary} -> REFUSED (guessed URL)")
+                        res.steps.append(Step(step, thought, action, summary, "refused: " + problem, False,
+                                              snap.url, shot_name))
+                        continue
                 try:
                     concrete = dict(action)
                     for f in ("text", "url"):
@@ -232,6 +264,9 @@ class Agent:
                             concrete[f] = self.substitute(concrete[f])
                     outcome = browser.act(concrete)
                     ok = True
+                    if kind in ("goto", "click") and browser.looks_like_not_found():
+                        dead_urls.add(self.norm_url(browser.page.url))
+                        outcome += " (the page says 404 / Page not found)"
                 except ActionError as e:
                     outcome, ok = f"FAILED: {e}", False
                     repeated_failures[key] = repeated_failures.get(key, 0) + 1
@@ -239,6 +274,19 @@ class Agent:
                         note = f"The action '{summary}' has failed {repeated_failures[key]} times. Choose a different approach."
                 self.log(f"     {summary} -> {outcome}")
                 res.steps.append(Step(step, thought, action, summary, self.mask(outcome), ok, snap.url, shot_name))
+
+                # Stuck detection: the same action failing again and again, or the same few actions
+                # repeating, means the model is not making progress. Stop early and say so honestly.
+                if repeated_failures.get(key, 0) >= 4:
+                    res.status = "ERROR"
+                    res.reason = f"Stuck: '{summary}' failed {repeated_failures[key]} times; could not operate this part of the page."
+                    break
+                recent = [s.summary for s in res.steps[-10:]]
+                if len(recent) == 10 and len(set(recent)) <= 3:
+                    res.status = "ERROR"
+                    res.reason = ("Stuck in a loop: the last 10 actions only repeated "
+                                  + ", ".join(sorted(set(recent))) + " without progress.")
+                    break
             else:
                 res.status = "ERROR"
                 res.reason = f"Gave up after {self.max_steps} steps without reaching a verdict."
